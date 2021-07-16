@@ -44,6 +44,7 @@ class AsyncTcpClient(object):
             if not message:
                 # Receiving null data means remote connection closing
                 break
+            _logger.debug(f"Received message {message}")
 
         self.target_socket.close()
 
