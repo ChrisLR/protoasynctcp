@@ -40,7 +40,12 @@ class AsyncTcpClient(object):
     async def receive_messages(self):
         """ Receives messages and closes connection when closing """
         while self.running:
-            message = await self.loop.sock_recv(self.target_socket, 1024)
+            try:
+                message = await self.loop.sock_recv(self.target_socket, 1024)
+            except OSError:
+                _logger.error("Server disconnected...")
+                break
+
             if not message:
                 # Receiving null data means remote connection closing
                 break

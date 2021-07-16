@@ -40,7 +40,13 @@ class AsyncTcpServer(object):
     async def receive_message(self, client_socket):
         """ Receives messages and closes connection when closing """
         while self.running:
-            message = await self.loop.sock_recv(client_socket, 1024)
+            try:
+                message = await self.loop.sock_recv(client_socket, 1024)
+            except OSError:
+                _logger.error(f"Client {client_socket.getpeername()} disconnected")
+                self._connected_sockets.remove(client_socket)
+                break
+
             if not message:
                 # Receiving null data means remote connection closing
                 _logger.debug("Closing connection...")
@@ -62,7 +68,10 @@ class AsyncTcpServer(object):
             await asyncio.sleep(5)
             _logger.debug("Sending heartbeat ping")
             for connected_socket in self._connected_sockets:
-                await self.loop.sock_sendall(connected_socket, b"PING")
+                try:
+                    await self.loop.sock_sendall(connected_socket, b"PING")
+                except ConnectionResetError:
+                    _logger.error(f"Client {connected_socket.getpeername()} was forcibly closed by the remote host.")
 
 
 if __name__ == '__main__':
